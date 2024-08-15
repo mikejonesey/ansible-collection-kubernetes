@@ -1,0 +1,25 @@
+---
+
+- name: Create Manifest Directory
+  ansible.builtin.file:
+    path: "/etc/kubernetes/manifests"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Template keepalived pod
+  ansible.builtin.template:
+    src: manifests/keepalived.yaml.j2
+    dest: /etc/kubernetes/manifests/keepalived.yaml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Template haproxy pod
+  ansible.builtin.template:
+    src: manifests/haproxy.yaml.j2
+    dest: /etc/kubernetes/manifests/haproxy.yaml
+    owner: root
+    group: root
+    mode: "0644"

@@ -1,0 +1,115 @@
+# At this point we could copy and paste the join command from the master node. That command only works for 2 hours,
+# so we will build our own join should we want to add nodes in the future. Find the token on the master node. The token
+# lasts 2 hours by default. If it has been longer, and no token is present you can generate a new one with the sudo
+# kubeadm token create command, seen in the following command.
+- name: Get a token from master
+  ansible.builtin.command: kubeadm token create
+  delegate_to: "{{ groups['k8s_master'][0] }}"
+  register: k8s_token
+  changed_when: true
+
+# Create and use a Discovery Token CA Cert Hash created from the master to ensure the node joins the cluster in a secure manner.
+- name: Create Discovery Token
+  ansible.builtin.shell: |
+    set -o pipefail
+    openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | \
+      openssl rsa -pubin -outform der 2>/dev/null | \
+      openssl dgst -sha256 -hex | sed 's/^.* //'
+  args:
+    executable: /bin/bash
+  delegate_to: "{{ groups['k8s_master'][0] }}"
+  register: k8s_discovery_token
+  changed_when: true
+
+# As we're adding a control plane we also need the certs...
+# we don't know when we'll add extra master nodes... could be after two hours...
+# we can have ansible copy...
+# https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/high-availability/#manual-certs
+# scp /etc/kubernetes/pki/ca.crt
+# scp /etc/kubernetes/pki/ca.key
+# scp /etc/kubernetes/pki/sa.key
+# scp /etc/kubernetes/pki/sa.pub
+# scp /etc/kubernetes/pki/front-proxy-ca.crt
+# scp /etc/kubernetes/pki/front-proxy-ca.key
+# /etc/kubernetes/pki/etcd/ca.crt
+# /etc/kubernetes/pki/etcd/ca.key
+# ... or preffered choice: re-upload certs (no extra setup and no copy secrets all over)
+# The certificate key is a hex encoded string that is an AES key of size 32 bytes.
+- name: Certificates re-upload and re-generate a new decryption key
+  ansible.builtin.shell: |
+    set -o pipefail
+    kubeadm init phase upload-certs --upload-certs 2>/dev/null | tail -1 | tee /root/kubeadm_init_certs.log
+  args:
+    executable: /bin/bash
+  delegate_to: "{{ groups['k8s_master'][0] }}"
+  register: k8s_cert_key
+  changed_when: true
+
+# https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/high-availability/
+# Use the token and hash, in this case as sha256:long-hash to join the cluster from the second/worker node. Use the
+# private IP address of the master server and port 6443. The output of the kubeadm init on the master also has an
+# example to use, should it still be available
+- name: Join Additional Master to Cluster
+  ansible.builtin.shell: |
+    set -o pipefail
+    kubeadm join \
+      --token {{ k8s_token.stdout }} \
+      {{ k8s_control_plane_host }}:{{ k8s_control_plane_port }} \
+      --discovery-token-ca-cert-hash sha256:{{ k8s_discovery_token.stdout }} \
+      --control-plane \
+      --certificate-key {{ k8s_cert_key.stdout }} \
+      | tee /root/kubeadm_join_master.log
+  args:
+    executable: /bin/bash
+  register: join_output
+  changed_when: "join_output.rc == 0"
+  failed_when: "join_output.rc != 0"
+
+- name: Create user dir
+  become: false
+  ansible.builtin.file:
+    path: $HOME/.kube
+    state: directory
+    mode: "0700"
+
+- name: Copy config to user
+  ansible.builtin.copy:
+    src: "/etc/kubernetes/admin.conf"
+    dest: "$PWD/.kube/config"
+    mode: "0600"
+    owner: "{{ ansible_env['SUDO_USER'] }}"
+    remote_src: true
+
+- name: Install back completion
+  ansible.builtin.apt:
+    name: "{{ install_packages }}"
+    state: present
+  vars:
+    install_packages:
+      - bash-completion
+
+- name: Add Kubelet bash completion
+  ansible.builtin.lineinfile:
+    path: "~/.bashrc"
+    regexp: 'kubectl completion bash'
+    line: "source <(kubectl completion bash)"
+
+# master is not allowed to run non-infra pods by default
+- name: Untaint master
+  become: false
+  ansible.builtin.shell: |
+    kubectl taint nodes --all node-role.kubernetes.io/master-
+    kubectl taint nodes --all node.kubernetes.io/not-ready-
+  when: "kubernetes_version is version('1.24.0','<')"
+  register: untaint_output
+  changed_when: "'untainted' in untaint_output.stdout"
+  failed_when: "'connection refused' in untaint_output.stderr"
+
+- name: Untaint master
+  become: false
+  ansible.builtin.shell: |
+    kubectl taint nodes --all node-role.kubernetes.io/control-plane:NoSchedule-
+  when: "kubernetes_version is version('1.24.0','>=')"
+  register: untaint_output
+  changed_when: "'untainted' in untaint_output.stdout"
+  failed_when: "'connection refused' in untaint_output.stderr"

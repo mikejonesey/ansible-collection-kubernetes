@@ -1,0 +1,50 @@
+! Configuration File for keepalived
+
+global_defs {
+   notification_email {
+     mj@mikejonesey.co.uk
+   }
+   router_id lb1
+   vrrp_skip_check_adv_addr
+   #vrrp_strict
+   vrrp_garp_interval 0
+   vrrp_gna_interval 0
+}
+vrrp_script check_apiserver {
+  script "/etc/keepalived/check_apiserver.sh"
+  interval 3
+  weight -2
+  fall 10
+  rise 2
+}
+
+vrrp_instance VI_1 {
+{% if ansible_host == hostvars[groups['k8s_ha_lb'][0]].ansible_host %}
+    state MASTER
+{% else %}
+    state BACKUP
+{% endif %}
+    interface {{ ha_loadbalancer_vip_interface }}
+    virtual_router_id 52
+{% if ansible_host == hostvars[groups['k8s_ha_lb'][0]].ansible_host %}
+    priority 150
+{% else %}
+    priority 120
+{% endif %}
+    advert_int 1
+    authentication {
+        auth_type AH
+        auth_pass {{ ha_loadbalancer_vip_pass }}
+    }
+{% set vip_ip_k8s = hostvars[groups['k8s_cp_vip'][0]].ansible_ssh_host %}
+{% set vip_ip_k8s_octets = vip_ip_k8s.split('.') %}
+    virtual_ipaddress {
+        {{ vip_ip_k8s }}/24 brd {{ vip_ip_k8s_octets[0] }}.{{ vip_ip_k8s_octets[1] }}.{{ vip_ip_k8s_octets[2] }}.255 dev {{ ha_loadbalancer_vip_interface }}
+    }
+    track_interface {
+        {{ ha_loadbalancer_vip_interface }} weight 50
+    }
+    track_script {
+        check_apiserver
+    }
+}

@@ -1,0 +1,57 @@
+---
+# tasks file for cluster_reset
+
+# This playbook is intended for use to reset all master nodes in a cluster
+
+# Nodes
+- name: Remove kubeadmin join log
+  ansible.builtin.file:
+    path: /root/kubeadm_join.log
+    state: absent
+
+# Masters
+- name: Remove kubeadmin join log
+  ansible.builtin.file:
+    path: /root/kubeadm_join_master.log
+    state: absent
+
+# Primary Master
+- name: Remove kubeadmin join log
+  ansible.builtin.file:
+    path: /root/kubeadm-init.out
+    state: absent
+
+- name: Remove kubeadmin join log
+  ansible.builtin.file:
+    path: /root/kubeadm_init_certs.log
+    state: absent
+
+# Actual Reset
+- name: Kubernetes Reset
+  ansible.builtin.command: kubeadm reset -f
+  changed_when: true
+
+# Next install will fail if we don't wipe old network remnants
+# calico >= 3.6 needs networks to be empty for first run, or it gets stuck on init: upgrade-ipam
+- name: Wipe old networks
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - /var/lib/cni/networks
+    - /var/lib/cni/results
+    - /var/lib/cni/multus
+    - /etc/cni/net.d/00-multus.conf
+    - /etc/cni/net.d/10-calico.conflist
+    - /etc/cni/net.d/calico-kubeconfig
+
+- name: Create networks dir back
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  with_items:
+    - /var/lib/cni/networks
+    - /var/lib/cni/results

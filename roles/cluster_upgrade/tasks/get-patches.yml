@@ -1,0 +1,25 @@
+- name: Update apt
+  ansible.builtin.apt:
+    update_cache: true
+  run_once: true
+
+- name: Get Versions
+  ansible.builtin.shell: |
+    set -o pipefail
+    apt-cache madison kubeadm | awk '{print $3}'
+  run_once: true
+  register: kubeadm_versions
+  changed_when: false
+
+- name: Set Availible Patches
+  ansible.builtin.set_fact:
+    availible_patches: "{{ lookup('template', 'get-patch-updates.j2') }}"
+  run_once: true
+
+- name: Print Versions
+  ansible.builtin.debug:
+    msg:
+      - "{{ item }}"
+  with_items: "{{ availible_patches | split(',') }}"
+  run_once: true
+  when: "availible_patches != ''"

@@ -1,0 +1,6 @@
+---
+- name: Test HA Loadbalancer
+  hosts: localhost
+  remote_user: root
+  roles:
+    - ha_loadbalancer

@@ -1,0 +1,152 @@
+---
+# tasks file for containerd
+
+# https://kubernetes.io/docs/setup/production-environment/container-runtimes/#containerd
+# https://github.com/containerd/containerd/blob/main/docs/getting-started.md
+# apt > go to docker...
+# The containerd.io packages in DEB and RPM formats are distributed by Docker (not by the containerd project).
+# See the Docker documentation for how to set up apt-get or dnf to install containerd.io packages:
+# https://docs.docker.com/engine/install/debian/
+
+# (almost the same as docker-ce install)
+
+- name: Remove old
+  ansible.builtin.apt:
+    name: "{{ remove_packages }}"
+    state: absent
+  vars:
+    remove_packages:
+      - docker
+      - docker-engine
+      - docker.io
+      - containerd
+      - runc
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+
+- name: Install dependancies
+  ansible.builtin.apt:
+    name: "{{ install_packages }}"
+    state: present
+  vars:
+    install_packages:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+
+# DOCKER REPO >> START >>
+- name: Docker Repo Setup
+  block:
+    - name: Fetch Docker APT Key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/debian/gpg
+        dest: /usr/share/keyrings/docker-archive-keyring.asc
+        mode: '0644'
+        force: true
+      register: fetch_output
+
+    - name: Install Docker APT Key
+      ansible.builtin.shell: |
+        set -o pipefail
+        cat /usr/share/keyrings/docker-archive-keyring.asc | gpg --batch --yes --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+      args:
+        executable: /bin/bash
+      register: dearmor_output
+      changed_when: "dearmor_output.rc == 0"
+
+    - name: Setup Docker Repo
+      ansible.builtin.copy:
+        dest: /etc/apt/sources.list.d/docker.list
+        content: >
+          deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg]
+          https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable
+        mode: "0644"
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+  rescue:
+    - name: Remove broken repo
+      ansible.builtin.file:
+        path: /etc/apt/sources.list.d/docker.list
+        state: absent
+    - name: Fail
+      ansible.builtin.fail:
+        msg: "Failed to add docker repository"
+# DOCKER REPO << END <<
+
+- name: Install Containerd
+  ansible.builtin.apt:
+    name: "{{ install_packages }}"
+    state: present
+  vars:
+    install_packages:
+      - containerd.io
+
+# Replaced with template
+# - name: Create Default Containerd Config
+#   ansible.builtin.command: "containerd config default > /etc/containerd/config.toml"
+
+- name: Template config.toml
+  ansible.builtin.template:
+    src: config.toml.j2
+    dest: /etc/containerd/config.toml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Start Containerd
+  ansible.builtin.systemd:
+    name: containerd
+    state: restarted
+    enabled: true
+
+# https://kubernetes.io/docs/setup/production-environment/container-runtimes/
+
+# cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
+# overlay
+# br_netfilter
+# EOF
+- name: Configure kernel modules
+  ansible.builtin.copy:
+    dest: /etc/modules-load.d/k8s.conf
+    content: |
+      overlay
+      br_netfilter
+    mode: "0644"
+
+# sudo modprobe overlay
+# sudo modprobe br_netfilter
+- name: Add the 802.1q module
+  community.general.modprobe:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - overlay
+    - br_netfilter
+
+# sysctl params required by setup, params persist across reboots
+# cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+# net.bridge.bridge-nf-call-iptables  = 1
+# net.bridge.bridge-nf-call-ip6tables = 1
+# net.ipv4.ip_forward                 = 1
+# EOF
+
+# Apply sysctl params without reboot
+# sudo sysctl --system
+- name: Set sysctl settings
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    sysctl_file: /etc/sysctl.d/k8s.conf
+  with_items:
+    - name: "net.bridge.bridge-nf-call-iptables"
+      value: "1"
+    - name: "net.bridge.bridge-nf-call-ip6tables"
+      value: "1"
+    - name: "net.ipv4.ip_forward"
+      value: "1"

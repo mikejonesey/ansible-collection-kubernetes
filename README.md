@@ -1,0 +1,90 @@
+# Ansible Collection - mikejonesey.kubernetes
+
+The main purpose of this collection is to provision and update k8s clusters on-prem / home-lab;
+
+- Bare-Metal
+- Virtualised Setups
+
+For cloud installs, GKE, EKS, AKS are preffered, but the collection could be run on compute instances too provided network restrictions are lifted eg, source/dest check.
+
+# Installation
+
+```commandline
+ansible-galaxy collection install mikejonesey.kubernetes
+```
+
+# Supported K8s Cluster Install Topology
+
+1. **Standalone node**
+  - K8s Cluster
+    - node-cp-1
+2. **Single Control Plane Cluster**
+  - K8s Cluster
+    - node-cp-1
+    - node-worker-1
+    - node-worker-2
+    - node-worker-3
+3. **HA Stacked Control Plane External Loadbalancer**
+  - Loadbalancer 1 + vip (keepalived+haproxy)
+  - Loadbalancer 2 + vip (keepalived+haproxy)
+  - K8s Cluster
+    - node-cp-1
+    - node-cp-2
+    - node-cp-3
+    - node-worker-1
+4. **HA Stacked Control Plane Static Pod Loadbalancer**
+  - K8s Cluster
+    - node-cp-1 + lb + vip (keepalived+haproxy)
+    - node-cp-2 + lb + vip (keepalived+haproxy)
+    - node-cp-3 + lb + vip (keepalived+haproxy)
+    - node-worker-1
+
+# Host / Node Distro Support
+
+| Distro       | Tested                      |
+|--------------|-----------------------------|
+| Debian 11    | YES                         |
+| Debian 12    | YES                         |
+| Ubuntu 24.04 | Not Tested, will test soon. |
+
+# Usage
+
+See the role readme files
+
+- [Cluster Installation](roles/cluster_setup/README.md)
+- [Highly Available Cluster Setup](roles/ha_loadbalancer/README.md)
+- [Cluster Upgrade](roles/cluster_upgrade/README.md)
+- [Cluster Uninstall](roles/cluster_reset/README.md)
+- [K8s Secrets Creation](roles/secrets/README.md)
+
+# Example Playbooks
+
+See [playbooks](playbooks/) for examples.
+
+### Cluster Install
+
+```commandline
+ansible-playbook -i inventories/... kubernetes.yml
+```
+
+### Cluster Upgrade
+
+```commandline
+ansible-playbook -i inventories/... kubernetes-upgrade.yml 
+```
+
+### Kubernetes Secrets Creation / Update
+
+```commandline
+ansible-playbook -i inventories/... kubernetes.yml -t secrets
+```
+
+# Todo...
+
+Add support for:
+
+- HA Stacked Control Plane kube-vip Loadbalancer
+- HA External etcd Control Plane + External Loadbalancer
+
+More Info on Highly Available Topology: https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/ha-topology/
+

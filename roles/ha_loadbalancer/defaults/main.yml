@@ -1,0 +1,17 @@
+---
+# defaults file for ha_loadbalancer
+
+ha_loadbalancer_is_external: "{{ inventory_hostname not in groups['k8s'] }}"
+
+# vip name
+ha_loadbalancer_vip_name: "{{ hostvars[groups['k8s_cp_vip'][0]].ansible_host }}"
+# vip password
+ha_loadbalancer_vip_pass: "example"
+# interface used for clustering
+ha_loadbalancer_vip_interface: "ens18"
+# must be common among nodes in this cluster, but unique per cluster in the same subnet
+ha_loadbalancer_vip_virtual_router_id: 52
+
+# Api Port Settings
+ha_loadbalancer_apiserver_lb_port: "{{ 6443 if ha_loadbalancer_is_external else 8443 }}"
+ha_loadbalancer_apiserver_local_port: "6443"

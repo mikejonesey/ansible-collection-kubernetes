@@ -1,0 +1,105 @@
+- name: Update Repository
+  ansible.builtin.include_tasks: apt_repo.yml
+  when: "is_minor_upgrade"
+
+- name: Unhold kubeadm
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: install
+  with_items:
+    - kubeadm
+
+- name: Install kubeadm
+  ansible.builtin.apt:
+    name: "{{ install_packages }}"
+    state: present
+  vars:
+    install_packages:
+      - kubeadm={{ kubernetes_version }}
+
+- name: Hold kubeadm
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  with_items:
+    - kubeadm
+
+- name: Kubeadm upgrade plan
+  ansible.builtin.shell: |
+    kubeadm upgrade plan
+  register: upgrade_plan_output
+  failed_when: "upgrade_plan_output.rc != 0"
+  changed_when: false
+
+- name: Kubeadm upgrade apply
+  ansible.builtin.shell: |
+    set -o pipefail
+    kubeadm upgrade apply --yes v{{ desired_version }} | tee /root/kubeadm_upgrade_apply_{{ desired_version }}_{{ ansible_date_time.epoch }}.out
+  register: upgrade_output
+  failed_when: "'SUCCESS' not in upgrade_output.stdout"
+  changed_when: true
+  when: "inventory_hostname == hostvars[groups['k8s_master'][0]].inventory_hostname"
+
+- name: Kubeadm upgrade node
+  ansible.builtin.shell: |
+    set -o pipefail
+    kubeadm upgrade node | tee /root/kubeadm_upgrade_node_{{ desired_version }}_{{ ansible_date_time.epoch }}.out
+  register: upgrade_output
+  failed_when: "'The configuration for this node was successfully updated' not in upgrade_output.stdout"
+  changed_when: true
+  when: "inventory_hostname != hostvars[groups['k8s_master'][0]].inventory_hostname"
+
+- name: Drain Node
+  delegate_to: 'localhost'
+  become: false
+  ansible.builtin.shell: |
+    export KUBECONFIG="{{ kubernetes_kubeconfig }}"
+    kubectl drain {{ inventory_hostname }} --ignore-daemonsets
+  args:
+    executable: /bin/bash
+  register: drain_result
+  changed_when: "drain_result.rc == 0"
+  failed_when: "drain_result.rc == 1"
+
+- name: Unhold kubelet and kubectl
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: install
+  with_items:
+    - kubelet
+    - kubectl
+
+- name: Install kubelet and kubectl
+  ansible.builtin.apt:
+    name: "{{ install_packages }}"
+    state: present
+  vars:
+    install_packages:
+      - kubelet={{ kubernetes_version }}
+      - kubectl={{ kubernetes_version }}
+
+- name: Hold kubelet and kubectl
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  with_items:
+    - kubelet
+    - kubectl
+
+- name: Restart kubelet
+  ansible.builtin.systemd:
+    name: "kubelet"
+    daemon_reload: true
+    state: restarted
+
+- name: Uncordon Node
+  delegate_to: 'localhost'
+  become: false
+  ansible.builtin.shell: |
+    export KUBECONFIG="{{ kubernetes_kubeconfig }}"
+    kubectl uncordon {{ inventory_hostname }}
+  args:
+    executable: /bin/bash
+  register: uncordon_result
+  changed_when: "uncordon_result.rc == 0"
+  failed_when: "uncordon_result.rc == 1"

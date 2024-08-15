@@ -1,0 +1,6 @@
+---
+# vars file for cluster_upgrade
+
+# role upgrade vars, overridden in role when change is needed
+is_patch_upgrade: false
+is_minor_upgrade: false

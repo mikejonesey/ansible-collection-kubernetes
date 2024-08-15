@@ -1,0 +1,39 @@
+---
+# defaults file for cluster_setup
+
+# kubernetes_version: "1.18.1-00"
+kubernetes_version: "1.23.4-00"
+
+# --------------------------------------------------
+
+# The control plane definition
+k8s_control_plane_port: "{{ ha_loadbalancer_apiserver_lb_port | default('6443') }}"
+
+# a master node (used when clustered but no HA - default back to local)
+k8s_control_plane_host: "{{ hostvars[groups['k8s_master'][0]].inventory_hostname | default('k8smaster') }}"
+k8s_control_plane_ip: "{{ hostvars[groups['k8s_master'][0]].ansible_ssh_host | default('127.0.0.1') }}"
+
+# can be overriden with VIP / ELB for HA:
+
+# from inventory def
+# k8s_control_plane_host: "{{ hostvars[groups['k8s_cp_vip'][0]].inventory_hostname }}"
+# k8s_control_plane_ip: "{{ hostvars[groups['k8s_cp_vip'][0]].ansible_ssh_host }}"
+
+# static defined
+# k8s_control_plane_host: "k8s-control-plane-vip"
+# k8s_control_plane_ip: "192.168.1.100"
+
+# --------------------------------------------------
+
+# The Service CIDR
+# k8s_service_subnet: "172.17.17.0/24"
+k8s_service_subnet: "10.96.0.0/16"
+
+# The POD CIDR
+# k8s_pod_subnet: "172.16.0.0/16"
+# k8s_pod_subnet: "192.168.0.0/16"
+k8s_pod_subnet: "10.244.0.0/24"
+
+# --------------------------------------------------
+
+kubernetes_audit_webhook: false

@@ -1,0 +1,6 @@
+---
+- name: Test k8s Reset
+  hosts: localhost
+  remote_user: root
+  roles:
+    - cluster_reset

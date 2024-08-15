@@ -1,0 +1,39 @@
+- name: Create keepalived Directory
+  ansible.builtin.file:
+    path: "/etc/keepalived"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Template keepalived config
+  ansible.builtin.template:
+    src: configs/keepalived.conf.j2
+    dest: /etc/keepalived/keepalived.conf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Template keepalived health-check script
+  ansible.builtin.template:
+    src: configs/check_apiserver.sh.j2
+    dest: /etc/keepalived/check_apiserver.sh
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Create haproxy Directory
+  ansible.builtin.file:
+    path: "/etc/haproxy"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Template haproxy config
+  ansible.builtin.template:
+    src: configs/haproxy.cfg.j2
+    dest: /etc/haproxy/haproxy.cfg
+    owner: root
+    group: root
+    mode: "0644"

@@ -1,0 +1,74 @@
+---
+
+- name: Upload kubadm-config
+  ansible.builtin.template:
+    src: "k8s/kubeadm-config.yml.j2"
+    dest: "/root/kubeadm-config.yaml"
+    owner: root
+    group: root
+    mode: "600"
+
+- name: Pre-download images
+  ansible.builtin.command: kubeadm config images pull
+  register: init_output
+  changed_when: true
+  failed_when: "init_output.rc != 0"
+
+- name: Init Kubernetes
+  ansible.builtin.shell: |
+    set -o pipefail
+    kubeadm init --config=/root/kubeadm-config.yaml --upload-certs | tee /root/kubeadm-init.out
+  args:
+    executable: /bin/bash
+  register: init_output
+  changed_when: true
+  failed_when: "init_output.rc != 0"
+
+- name: Create user dir
+  become: false
+  ansible.builtin.file:
+    path: $HOME/.kube
+    state: directory
+    mode: "0700"
+
+- name: Copy config to user
+  ansible.builtin.copy:
+    src: "/etc/kubernetes/admin.conf"
+    dest: "$PWD/.kube/config"
+    mode: "0600"
+    owner: "{{ ansible_env['SUDO_USER'] }}"
+    remote_src: true
+
+- name: Install back completion
+  ansible.builtin.apt:
+    name: "{{ install_packages }}"
+    state: present
+  vars:
+    install_packages:
+      - bash-completion
+
+- name: Add Kubelet bash completion
+  ansible.builtin.lineinfile:
+    path: "~/.bashrc"
+    regexp: 'kubectl completion bash'
+    line: "source <(kubectl completion bash)"
+
+# master is not allowed to run non-infra pods by default
+- name: Untaint master
+  become: false
+  ansible.builtin.shell: |
+    kubectl taint nodes --all node-role.kubernetes.io/master-
+    kubectl taint nodes --all node.kubernetes.io/not-ready-
+  when: "kubernetes_version is version('1.24.0','<')"
+  register: untaint_output
+  changed_when: "'untainted' in untaint_output.stdout"
+  failed_when: "'connection refused' in untaint_output.stderr"
+
+- name: Untaint master
+  become: false
+  ansible.builtin.shell: |
+    kubectl taint nodes --all node-role.kubernetes.io/control-plane:NoSchedule-
+  when: "kubernetes_version is version('1.24.0','>=')"
+  register: untaint_output
+  changed_when: "'untainted' in untaint_output.stdout"
+  failed_when: "'connection refused' in untaint_output.stderr"

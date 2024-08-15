@@ -1,0 +1,59 @@
+---
+
+- name: Install NFS Server
+  ansible.builtin.apt:
+    name: "{{ install_packages }}"
+    state: present
+  vars:
+    install_packages:
+      - nfs-kernel-server
+
+- name: Setup NFS Directory
+  ansible.builtin.file:
+    path: "/srv/sfw"
+    state: directory
+    owner: root
+    group: root
+    mode: "1777"
+
+- name: Dummy file
+  ansible.builtin.lineinfile:
+    path: "/srv/sfw/hello.txt"
+    regexp: "software"
+    line: "software"
+    create: true
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Update Exports
+  ansible.builtin.lineinfile:
+    path: "/etc/exports"
+    regexp: "sfw"
+    line: "/srv/sfw/ *(rw,sync,no_root_squash,subtree_check)"
+
+- name: Export Refresh
+  ansible.builtin.command: exportfs -ra
+  changed_when: true
+
+- name: Set Access Mode
+  ansible.builtin.set_fact:
+    pv_access_mode: ReadWriteMany
+    pv_access_mode_short: rwm
+
+- name: Setup PV
+  ansible.builtin.include_tasks: nfs-pv.yml
+  with_sequence: start=1 end=10
+  loop_control:
+    index_var: pv_index
+
+- name: Set Access Mode
+  ansible.builtin.set_fact:
+    pv_access_mode: ReadWriteOnce
+    pv_access_mode_short: rwo
+
+- name: Setup PV
+  ansible.builtin.include_tasks: nfs-pv.yml
+  with_sequence: start=1 end=10
+  loop_control:
+    index_var: pv_index

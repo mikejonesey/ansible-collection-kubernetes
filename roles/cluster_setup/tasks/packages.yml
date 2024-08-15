@@ -1,0 +1,77 @@
+---
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+
+- name: Install dependancies
+  ansible.builtin.apt:
+    name: "{{ install_packages }}"
+    state: present
+  vars:
+    install_packages:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+
+# KUBERNETES REPO >> START >>
+- name: Kubernetes Repo Setup
+  block:
+    - name: Fetch K8s APT Key
+      ansible.builtin.get_url:
+        url: https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_version | regex_replace('^([0-9]*)\.([0-9]*).*', '\1.\2') }}/deb/Release.key
+        dest: /usr/share/keyrings/kubernetes-archive-keyring.asc
+        mode: '0644'
+        force: true
+      register: fetch_output
+
+    - name: Install K8s APT Key
+      ansible.builtin.shell: |
+        set -o pipefail
+        cat /usr/share/keyrings/kubernetes-archive-keyring.asc | gpg --batch --yes --dearmor -o /usr/share/keyrings/kubernetes-archive-keyring.gpg
+      args:
+        executable: /bin/bash
+      register: dearmor_output
+      changed_when: "dearmor_output.rc == 0"
+
+    - name: Setup k8s Repo
+      ansible.builtin.copy:
+        dest: /etc/apt/sources.list.d/kubernetes.list
+        content: >
+          deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg]
+          https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_version | regex_replace('^([0-9]*)\.([0-9]*).*', '\1.\2') }}/deb/ /
+        mode: "0644"
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+  rescue:
+    - name: Remove broken repo
+      ansible.builtin.file:
+        path: /etc/apt/sources.list.d/kubernetes.list
+        state: absent
+    - name: Fail
+      ansible.builtin.fail:
+        msg: "Failed to add kubernetes repository"
+# KUBERNETES REPO << END <<
+
+- name: Install Kubernetes Packages
+  ansible.builtin.apt:
+    name: "{{ install_packages }}"
+    state: present
+  vars:
+    install_packages:
+      - kubeadm={{ kubernetes_version }}
+      - kubelet={{ kubernetes_version }}
+      - kubectl={{ kubernetes_version }}
+
+- name: Hold Kubernetes Packages
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  with_items:
+    - kubeadm
+    - kubelet
+    - kubectl

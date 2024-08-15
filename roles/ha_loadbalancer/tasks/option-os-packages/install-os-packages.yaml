@@ -1,0 +1,11 @@
+---
+
+- name: Install keepalived
+  ansible.builtin.package:
+    name: keepalived
+    state: present
+
+- name: Install haproxy
+  ansible.builtin.package:
+    name: haproxy
+    state: present

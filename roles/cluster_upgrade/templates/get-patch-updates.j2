@@ -1,0 +1,5 @@
+{%- for upgrade_version in kubeadm_versions.stdout_lines -%}
+{%- if (upgrade_version|regex_replace('-.*','')) is version(current_node_version,'>') -%}
+{% if loop.index > 1 %},{% endif %}{{ upgrade_version }}
+{%- endif -%}
+{%- endfor -%}

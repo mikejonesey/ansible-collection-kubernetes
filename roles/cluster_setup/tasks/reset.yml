@@ -1,0 +1,27 @@
+# Nodes
+- name: Remove kubeadmin join log
+  ansible.builtin.file:
+    path: /root/kubeadm_join.log
+    state: absent
+
+# Masters
+- name: Remove kubeadmin join log
+  ansible.builtin.file:
+    path: /root/kubeadm_join_master.log
+    state: absent
+
+# Primary Master
+- name: Remove kubeadmin join log
+  ansible.builtin.file:
+    path: /root/kubeadm-init.out
+    state: absent
+
+- name: Remove kubeadmin join log
+  ansible.builtin.file:
+    path: /root/kubeadm_init_certs.log
+    state: absent
+
+# Actual Reset
+- name: Kubernetes Reset
+  ansible.builtin.command: kubeadm reset -f
+  changed_when: true

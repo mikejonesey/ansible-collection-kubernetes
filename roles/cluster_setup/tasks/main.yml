@@ -1,0 +1,61 @@
+---
+# tasks file for cluster_setup
+
+- name: Reset Node
+  ansible.builtin.include_tasks: reset.yml
+  when: "k8reset is defined"
+
+- name: Install K8s Packages
+  ansible.builtin.include_tasks: packages.yml
+
+- name: Add k8master host entry
+  ansible.builtin.lineinfile:
+    path: "/etc/hosts"
+    regexp: '{{ k8s_control_plane_host }}$'
+    line: "{{ k8s_control_plane_ip }}\t{{ k8s_control_plane_host }}"
+
+- name: Stat Master
+  ansible.builtin.stat:
+    path: "/root/kubeadm-init.out"
+  register: master_stat
+
+# Primary Master Node
+- name: Include tasks for First Master node
+  ansible.builtin.include_tasks: master.yml
+  when: >
+    'k8s_master' in group_names and
+    hostvars[groups['k8s_master'][0]].inventory_hostname == inventory_hostname and
+    not master_stat.stat.exists
+
+# Extra Master Nodes (HA)
+- name: Include tasks for Additional Master node
+  ansible.builtin.include_tasks: master-additional.yml
+  when: >
+    'k8s_master' in group_names and
+    hostvars[groups['k8s_master'][0]].inventory_hostname != inventory_hostname and
+    not master_stat.stat.exists
+
+# - name: Setup NFS Server
+#   include_tasks: nfs-server.yml
+#   when: "'k8s_master' in group_names"
+
+- name: Stat Node
+  ansible.builtin.stat:
+    path: "/root/kubeadm_join.log"
+  register: node_stat
+
+- name: Include tasks for other nodes
+  ansible.builtin.include_tasks: node.yml
+  when: >
+    'k8s_node' in group_names and
+    not node_stat.stat.exists
+
+# - name: Test Deployment in default namespace
+#   become: no
+#   shell:
+#     kubectl create deployment nginx --image=nginx
+#   when: "ansible_hostname == groups['k8s_master'][0]"
+
+# todo...
+# iptables legacy
+# swapoff

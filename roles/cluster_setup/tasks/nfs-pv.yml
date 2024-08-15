@@ -1,0 +1,15 @@
+---
+
+- name: Set PV Name
+  ansible.builtin.set_fact:
+    pv_name: "pvvol-{{ pv_access_mode_short }}-{{ pv_index + 1 }}"
+
+- name: Upload template for volumes
+  ansible.builtin.template:
+    src: k8s/nfs-pv.yml.j2
+    dest: /root/nfs-pv-{{ pv_name }}.yml
+    mode: "0644"
+
+- name: Apply PV
+  ansible.builtin.command: "kubectl create -f /root/nfs-pv-{{ pv_name }}.yml"
+  changed_when: true

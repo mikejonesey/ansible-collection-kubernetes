@@ -1,0 +1,21 @@
+---
+# tasks file for ha_loadbalancer
+
+# Install loadbalancer on external nodes outside k8s
+- name: Install OS Packages
+  ansible.builtin.include_tasks: option-os-packages/install-os-packages.yaml
+  when: "ha_loadbalancer_is_external"
+
+# Install loadbalancer as Static pods in k8s
+- name: Template Static Pods
+  ansible.builtin.include_tasks: option-static-pods/template-static-pods.yaml
+  when: "not ha_loadbalancer_is_external"
+
+# Common task, External or Internal Load Balancer
+- name: Template Configs
+  ansible.builtin.include_tasks: template-configs.yaml
+
+# Start External Loadbalancer
+- name: Start External Loadbalancer
+  ansible.builtin.include_tasks: option-os-packages/start-external-loadbalancer.yaml
+  when: "ha_loadbalancer_is_external"
