@@ -1,38 +1,59 @@
-Role Name
+mikejonesey.kubernetes.cluster_setup
 =========
 
-A brief description of the role goes here.
+This role provisions a kubernetes cluster for on-prem / home-lab.
 
 Requirements
 ------------
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+[kubectl](https://kubernetes.io/docs/reference/kubectl/) for management of clusters.
 
 Role Variables
 --------------
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+defaults/main.yml
+
+| Variable               | Type    | Default                  | Use                                      |
+|------------------------|---------|--------------------------|------------------------------------------|
+| kubernetes_version     | default | 1.30.3-1.1               | Determine the version of k8s to install  |
+| k8s_control_plane_port | default | 6443                     | The external port of the k8s api service |
+| k8s_control_plane_host | default | {{ inventory_hostname }} | The hostname of the k8s api              |
+| k8s_control_plane_ip   | default | {{ ansible_ssh_host }}   | The ip address of the k8s api            |
+| k8s_service_subnet     | default | 10.96.0.0/16             | The Service CIDR                         |
+| k8s_pod_subnet         | default | 10.244.0.0/24            | The POD CIDR                             |
 
 Dependencies
 ------------
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+Installation:
+
+```commandline
+ansible-galaxy collection install mikejonesey.kubernetes
+ansible-galaxy collection install mikejonesey.helm_charts
+```
+
+Playbook Dependencies:
+
+| Collection              | Role                            | Usage                                         | Required | Comments                                                                    |
+|-------------------------|---------------------------------|-----------------------------------------------|----------|-----------------------------------------------------------------------------|
+| mikejonesey.kubernetes  | containerd                      | CRI backend for k8s                           | YES      | Playbook runs this role before k8s cluster init                             |
+| mikejonesey.kubernetes  | ha_loadbalancer                 | if deploying a HA setup                       | optional |                                                                             | 
+| mikejonesey.helm_charts | tigera_operator                 | This is used for setting up calico networking | YES      | Playbook runs this role after the first node is added to the control plane. |
 
 Example Playbook
 ----------------
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
+See [playbooks/kubernetes.yaml](../../playbooks/kubernetes.yml)
 
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
+    ansible-playbook -i inventories/example.host kubernetes.yml
 
 License
 -------
 
-BSD
+GPL-2.0-or-later
 
 Author Information
 ------------------
 
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+Michael Jones https://www.mikejonesey.co.uk/
+

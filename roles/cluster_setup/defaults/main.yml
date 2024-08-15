@@ -1,8 +1,7 @@
 ---
 # defaults file for cluster_setup
 
-# kubernetes_version: "1.18.1-00"
-kubernetes_version: "1.23.4-00"
+kubernetes_version: "1.30.3-1.1"
 
 # --------------------------------------------------
 

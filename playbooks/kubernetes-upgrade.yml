@@ -1,0 +1,35 @@
+---
+##################################################
+#
+# example: ansible-playbook -i inventory/client/client-env.host setup.yml
+#
+##################################################
+
+- name: Facts and Confirmation
+  hosts: whole_environment
+  become: true
+  tasks:
+    - name: Collect facts
+      ansible.builtin.setup:
+        gather_subset:
+          - 'all'
+    - name: Installing Kubernetes Version
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }} will be upgraded to {{ kubernetes_version }}"
+    - name: Confirm
+      ansible.builtin.pause:
+  tags: facts
+
+- name: Upgrade Cluster - upgrade all nodes
+  hosts: '{{ k8s_target | default("k8s") }}'
+  become: true
+  serial: 1
+  roles:
+    - name: K8s Cluster Upgrade
+      role: mikejonesey.kubernetes.cluster_upgrade
+      tags: upgrade
+  tags: k8s-upgrade
+
+# -------------------------------------------------
+# End
+# -------------------------------------------------

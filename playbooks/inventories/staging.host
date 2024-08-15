@@ -1,0 +1,78 @@
+##################################################
+# NODES
+##################################################
+[staging]
+
+# control plane VIP
+staging-vip	ansible_host=staging.example.com	ansible_ssh_host=192.168.0.100		comment="k8s control plane VIP"
+
+# Dedicated Loadbalancer Nodes
+# none, this env will use static pod
+
+# Master Nodes
+staging-k8s-master-01	ansible_host=staging-k8s-master-01.example.com ansible_ssh_host=192.168.0.101 comment="k8s master"
+staging-k8s-master-02	ansible_host=staging-k8s-master-02.example.com ansible_ssh_host=192.168.0.102 comment="k8s master"
+staging-k8s-master-03	ansible_host=staging-k8s-master-03.example.com ansible_ssh_host=192.168.0.103 comment="k8s master"
+
+# Extra Nodes
+
+##################################################
+# ENV MAPPING
+# usage:
+# - mapping hosts to environment groups
+##################################################
+
+[staging_k8s_cp_vip]
+staging-vip
+
+[staging_k8s_ha_lb]
+staging-k8s-master-01
+staging-k8s-master-02
+staging-k8s-master-03
+
+[staging_k8s_master]
+staging-k8s-master-01
+staging-k8s-master-02
+staging-k8s-master-03
+
+[staging_k8s_node]
+
+[staging_k8s:children]
+staging_k8s_master
+staging_k8s_node
+
+##################################################
+# GENERIC MAPPING + Vanity / Alias
+# usage:
+# - mapping environment groups to playbook groups
+# - mapping environment groups to variable groups
+##################################################
+# These mappings are the top level building blocks for playbooks, they should never be commented out as they map to generic mappings above
+
+[k8s_cp_vip:children]
+staging_k8s_cp_vip
+
+[k8s_ha_lb:children]
+staging_k8s_ha_lb
+
+[k8s_master:children]
+staging_k8s_master
+
+[k8s_node:children]
+staging_k8s_node
+
+[k8s:children]
+staging_k8s
+
+##################################################
+# GENERIC WRAPPER
+# whole_environment to map all
+##################################################
+
+[whole_environment:children]
+k8s
+
+# variable presidence:
+# whole_environment -> k8s -> staging_k8s -> staging_k8s_master
+# whole_environment -> k8s -> staging_k8s -> staging_k8s_node
+# k8s_master -> staging_k8s_master

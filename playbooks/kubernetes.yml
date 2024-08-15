@@ -1,0 +1,139 @@
+---
+##################################################
+#
+# example: ansible-playbook -i inventory/client/client-env.host setup.yml
+#
+##################################################
+
+- name: Facts and Confirmation
+  hosts: whole_environment
+  become: true
+  tasks:
+    - name: Collect facts
+      ansible.builtin.setup:
+        gather_subset:
+          - 'all'
+    - name: Installing Kubernetes Version
+      ansible.builtin.debug:
+        msg: "{{ kubernetes_version }}"
+    - name: Confirm
+      ansible.builtin.pause:
+  tags: facts
+
+- name: Install k8s Dependancies
+  hosts: whole_environment
+  become: true
+  gather_facts: true
+  roles:
+
+    # docker was here... removed - not supported in current k8s
+
+    - name: Containerd
+      role: mikejonesey.kubernetes.containerd
+      when: "kubernetes_version is version('1.24.0','>=')"
+      tags: containerd
+  tags: k8s-dep
+
+- name: Install HA loadbalancer Solution
+  hosts: '{{ k8s_ha_lb_target | default("k8s_ha_lb") }}'
+  become: true
+  roles:
+    - name: High Availability Load Balancer
+      role: mikejonesey.kubernetes.ha_loadbalancer
+      tags: lb,ha
+  tags: k8s-dep,k8s-install
+
+- name: Install Helm on All Master Nodes
+  hosts: '{{ helm_k8s_master_target | default("k8s_master") }}'
+  become: true
+  roles:
+    - name: Install helm
+      role: mikejonesey.helm_charts.helm
+      tags: helm
+  tags: helm
+
+# k8resetfull = reset all nodes first, required if wiping a cluster
+# k8reset = individual node/master reset
+- name: Wipe Cluster - reset all master nodes
+  hosts: '{{ helm_k8s_master_target | default("k8s_master") }}'
+  become: true
+  roles:
+    - name: k8s full reset
+      role: mikejonesey.kubernetes.cluster_reset
+      when: "k8resetfull is defined"
+      tags: reset
+  tags: k8s-reset
+
+- name: Install k8s and CNI on Primary Master Node (First Master Node)
+  hosts: '{{ helm_k8s_master_target | default("k8s_master") }}'
+  roles:
+    - name: Kubernetes on Primary Master
+      become: true
+      role: mikejonesey.kubernetes.cluster_setup
+      when: "hostvars[groups['k8s_master'][0]].inventory_hostname == inventory_hostname"
+      tags: kubernetes,k8,k8s
+
+    - name: Calico Networking
+      become: false
+      role: mikejonesey.helm_charts.tigera_operator
+      when: "hostvars[groups['k8s_master'][0]].inventory_hostname == inventory_hostname"
+      tags: calico
+  tags: k8s-install,k8s-install-primary
+
+- name: Install k8s on Extra Master Nodes (HA Control Plane Nodes), one at a time...
+  hosts: '{{ helm_k8s_master_target | default("k8s_master") }}'
+  become: true
+  serial: 1
+  roles:
+    - name: Kubernetes on Extra Masters
+      role: mikejonesey.kubernetes.cluster_setup
+      when: "hostvars[groups['k8s_master'][0]].inventory_hostname != inventory_hostname"
+      tags: kubernetes,k8,k8s
+  tags: k8s-install,k8s-install-masters
+
+- name: Install k8s on Extra Nodes (regular non-cp nodes)
+  hosts: '{{ helm_k8s_node_target | default("k8s_node") }}'
+  become: true
+  roles:
+    - name: Kubernetes on Extra Nodes
+      role: mikejonesey.kubernetes.cluster_setup
+      tags: kubernetes,k8,k8s
+  tags: k8s-install,k8s-install-nodes
+
+##################################################
+# Cluster UP, install basic services
+##################################################
+
+- name: Kubernetes Service ConfigMap / Secrets
+  hosts: '{{ helm_k8s_master_target | default("k8s_master") }}'
+  roles:
+    - name: Kubernetes Secrets
+      role: mikejonesey.kubernetes.secrets
+      run_once: true
+      tags: secret,secrets
+  tags: k8s-service-config
+
+# - name: Kubernetes Functionality
+#   hosts: '{{ helm_k8s_master_target | default("k8s_master") }}'
+#   roles:
+#     - name: Local Static Provisioner
+#       role: mikejonesey.helm_charts.local_static_provisioner
+#       run_once: true
+#       when: "helm_lsp_lvm_volumes|length>0 or helm_lsp_bind_volumes|length>0"
+#       tags: local,lvm,bind,provisioner
+#
+#     - name: NFS Storage Provisioner
+#       role: mikejonesey.helm_charts.nfs_subdir_external_provisioner
+#       run_once: true
+#       when: "helm_nfssubdir_instances|length>0"
+#       tags: nfs,provisioner
+#
+#     - name: Haproxy Ingress
+#       role: mikejonesey.helm_charts.haproxy_ingress
+#       run_once: true
+#       tags: haproxy,ingress
+#   tags: k8s-charts
+
+# -------------------------------------------------
+# End
+# -------------------------------------------------

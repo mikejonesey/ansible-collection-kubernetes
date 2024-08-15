@@ -1,0 +1,49 @@
+kubernetes_version: "1.30.3-1.1"
+
+# This env has CP behind LB with VIP, use that for the control plane
+k8s_control_plane_host: "{{ hostvars[groups['k8s_cp_vip'][0]].ansible_host }}"
+k8s_control_plane_ip: "{{ hostvars[groups['k8s_cp_vip'][0]].ansible_ssh_host }}"
+
+# This env has VIP on same host, change external/lb port from 6443
+ha_loadbalancer_apiserver_lb_port: "8443"
+
+# use vip host for details
+ha_loadbalancer_vip_name: "{{ hostvars[groups['k8s_cp_vip'][0]].ansible_host }}"
+ha_loadbalancer_vip_pass: "{{ lookup('passwordstore', 'vip/{{ ha_loadbalancer_vip_name }} directory={{ password_fullpath }} create=true overwrite=no') }}"
+
+# local user kuberconfig location
+kubernetes_kubeconfig: "/home/{{ ansible_user }}/.kube/config-example"
+
+##################################################
+# Kubernetes Secrets
+##################################################
+
+kubernetes_secrets_extra:
+  - name: example-generic
+    type: generic
+    namespaces:
+      - moo
+    data:
+      field1: "example"
+      field2: "example"
+temp: "{{ kubernetes_secrets.append(kubernetes_secrets_extra) }}"
+
+##################################################
+# NFS Provisioners
+##################################################
+
+helm_nfssubdir_instances: {}
+
+##################################################
+# LVM Datasource
+##################################################
+
+helm_lsp_lvm_volumes: {}
+
+##################################################
+# Bind FS Datasource
+##################################################
+
+helm_lsp_bind_volumes: {}
+
+##################################################
