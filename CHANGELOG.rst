@@ -4,6 +4,19 @@ Mikejonesey.Kubernetes Release Notes
 
 .. contents:: Topics
 
+v1.0.8
+======
+
+Release Summary
+---------------
+
+Documentation updates
+
+Minor Changes
+-------------
+
+- update readme for secrets role
+
 v1.0.7
 ======
 

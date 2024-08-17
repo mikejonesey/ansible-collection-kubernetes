@@ -1,38 +1,92 @@
-Role Name
+mikejonesey.kubernetes.secrets
 =========
 
-A brief description of the role goes here.
+Create K8s Secrets, generates a manifest from host_var or group_var, which should be sourced from passwordstore or vault.
 
 Requirements
 ------------
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+k8s config.
 
 Role Variables
 --------------
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+### Defaults
+
+| Name                                        | Default                | Description                                                                                                             |
+|---------------------------------------------|------------------------|-------------------------------------------------------------------------------------------------------------------------|
+| kubernetes_kubeconfig                       | "~/.kube/config"       | Path to the kube_config file to use to access the k8s cluster.                                                          |
+| kubernetes_secrets_debug                    | false                  | Generates a local manifest file without applying, which can be used for inspection / debugging                          |
+| kubernetes_secrets_lists                    | ['kubernetes_secrets'] | A List of List variables to process secrets from, this allows for additional lists to be created / added in group_vars. |
+| kubernetes_secrets_create_missing_namespace | false                  | Auto create missing namespace, by default secrets will not be created in namespaces that don't already exist.           |
+| kubernetes_secrets                          | *see below             | The default list of secrets to import.                                                                                  |
+
+**Example kubernetes_secrets**
+```yaml
+kubernetes_secrets:
+  - name: example-docker-registry
+    type: docker-registry
+    namespaces:
+       - default
+    docker-email: "user@example.com"
+    docker-password: "{{ data_from_passwordstore_or_vault }}"
+    docker-server: "https://index.docker.io/v1/"
+    docker-username: 'user'
+
+  - name: example-generic
+    type: generic
+    namespaces:
+       - default
+    data:
+      field1: "{{ data_from_passwordstore_or_vault }}"
+      field2: "{{ data_from_passwordstore_or_vault }}"
+
+  - name: example-tls
+    type: tls
+    namespaces:
+       - default
+    cert: "{{ data_from_passwordstore_or_vault | b64encode }}"
+    key: "{{ data_from_passwordstore_or_vault | b64encode }}"
+```
+**kubernetes_secrets subkey variables**
+
+| Name            | Type            | Example                          | Description                         |
+|-----------------|-----------------|----------------------------------|-------------------------------------|
+| name            | -               | example-secret                   | The secret name                     |
+| type            | -               | docker-registry, generic, tls    | The K8s secret type                 |
+| docker-email    | docker-registry | user@example.com                 | docker-registry user email          |
+| docker-password | docker-registry | password123                      | docker-registry user password       |
+| docker-server   | docker-registry | https://index.docker.io/v1/      | docker-registry uri                 |
+| docker-username | docker-registry | user                             | docker-registry username            |
+| data            | generic         | webhook_url=https://example.com/ | generic opaque type data            |
+| cert            | tls             | base64 encoded cert              | tls certificate data base64 encoded |
+| key             | tls             | base64 encoded key               | tls key data base64 encoded         |
+
+### Role Variables
+
+| Name | Description                                                                                                                                                                                     |
+| --- |-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| valid_namespaces | This variable is populated with a list of existing namespaces within the k8s cluster, which is used to determine if a namespace or secret should be created. This variable is not used defined. |
 
 Dependencies
 ------------
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+- collections
+  - kubernetes.core
 
 Example Playbook
 ----------------
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
+See [playbooks/kubernetes.yml](../../playbooks/kubernetes.yml)
 
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
+    ansible-playbook -i inventories/env kubernetes.yml -t secrets
 
 License
 -------
 
-BSD
+GPL-2.0-or-later
 
 Author Information
 ------------------
 
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+Michael Jones https://www.mikejonesey.co.uk/
