@@ -7,13 +7,13 @@ The main purpose of this collection is to provision and update k8s clusters on-p
 
 For cloud installs, GKE, EKS, AKS are preffered, but the collection could be run on compute instances too provided network restrictions are lifted eg, source/dest check.
 
-# Installation
+## Installation
 
 ```commandline
 ansible-galaxy collection install mikejonesey.kubernetes
 ```
 
-# Supported K8s Cluster Install Topology
+## Supported K8s Cluster Install Topology
 
 1. **Standalone node**
   - K8s Cluster
@@ -39,7 +39,7 @@ ansible-galaxy collection install mikejonesey.kubernetes
     - node-cp-3 + lb + vip (keepalived+haproxy)
     - node-worker-1
 
-# Host / Node Distro Support
+## Host / Node Distro Support
 
 | Distro       | Tested                      |
 |--------------|-----------------------------|
@@ -47,15 +47,15 @@ ansible-galaxy collection install mikejonesey.kubernetes
 | Debian 12    | YES                         |
 | Ubuntu 24.04 | Not Tested, will test soon. |
 
-# Usage
+## Roles
 
-See the role readme files
-
-- [Cluster Installation](roles/cluster_setup/README.md)
-- [Highly Available Cluster Setup](roles/ha_loadbalancer/README.md)
-- [Cluster Upgrade](roles/cluster_upgrade/README.md)
-- [Cluster Uninstall](roles/cluster_reset/README.md)
-- [K8s Secrets Creation](roles/secrets/README.md)
+| Name                                                             | Description                                                        |
+|------------------------------------------------------------------|--------------------------------------------------------------------|
+| [mikejonesey.kubernetes.cluster_setup](roles/cluster_setup/)     | K8s cluster installation, and updates eg adding extra nodes later. |
+| [mikejonesey.kubernetes.ha_loadbalancer](roles/ha_loadbalancer/) | Highly available cluster setup (VIP and loadbalancer)              |
+| [mikejonesey.kubernetes.cluster_upgrade](roles/cluster_upgrade/) | Cluster version upgrade                                            |
+| [mikejonesey.kubernetes.cluster_reset](roles/cluster_reset/)     | Cluster uninstall                                                  |
+| [mikejonesey.kubernetes.secrets](roles/secrets/)                 | K8s secrets creation                                               |
 
 # Example Playbooks
 
