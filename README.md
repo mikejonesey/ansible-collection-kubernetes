@@ -51,11 +51,12 @@ ansible-galaxy collection install mikejonesey.kubernetes
 
 | Name                                                             | Description                                                        |
 |------------------------------------------------------------------|--------------------------------------------------------------------|
+| [mikejonesey.kubernetes.containerd](roles/containerd/)           | Install containerd, and extra sandbox runtime backends.            |
 | [mikejonesey.kubernetes.cluster_setup](roles/cluster_setup/)     | K8s cluster installation, and updates eg adding extra nodes later. |
 | [mikejonesey.kubernetes.ha_loadbalancer](roles/ha_loadbalancer/) | Highly available cluster setup (VIP and loadbalancer)              |
 | [mikejonesey.kubernetes.cluster_upgrade](roles/cluster_upgrade/) | Cluster version upgrade                                            |
-| [mikejonesey.kubernetes.cluster_reset](roles/cluster_reset/)     | Cluster uninstall                                                  |
 | [mikejonesey.kubernetes.secrets](roles/secrets/)                 | K8s secrets creation                                               |
+| [mikejonesey.kubernetes.cluster_reset](roles/cluster_reset/)     | Cluster uninstall                                                  |
 
 # Example Playbooks
 

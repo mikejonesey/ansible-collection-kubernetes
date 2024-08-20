@@ -1,0 +1,9 @@
+---
+
+- name: Add gVisor Repository
+  ansible.builtin.include_tasks: apt_repo_gvisor.yml
+
+- name: Install gVisor
+  ansible.builtin.package:
+    name: runsc
+    state: present

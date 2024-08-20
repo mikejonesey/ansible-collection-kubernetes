@@ -1,38 +1,81 @@
-Role Name
+mikejonesey.kubernetes.containerd
 =========
 
-A brief description of the role goes here.
+Install and configure containerd for kubernetes.
 
 Requirements
 ------------
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+n/a
 
 Role Variables
 --------------
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+### Default Variables
+
+| Name  | Default | Description                                                        |
+| --- | --- |--------------------------------------------------------------------|
+| kubernetes_containerd_sandbox_gvisor_enabled | false | When enabled gVisor sandbox is installed as an additional runtime. |
+
+### K8s Sandbox Runtimes
+
+This role does not setup the manifests for alternate runtimes example:
+
+```yaml
+apiVersion: node.k8s.io/v1
+kind: RuntimeClass
+metadata:
+  name: gvisor
+handler: runsc
+```
+
+Once the mandifest is added pods can switch from the default runtime to the alternate runtime defined using runtimeClassName.
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-gvisor
+spec:
+  runtimeClassName: gvisor
+  containers:
+  - name: nginx
+    image: nginx
+```
 
 Dependencies
 ------------
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+n/a
 
 Example Playbook
 ----------------
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
+See [playbooks/kubernetes.yml](../../playbooks/kubernetes.yml)
 
-    - hosts: servers
+    - name: Install k8s Dependancies
+      hosts: whole_environment
+      become: true
+      gather_facts: true
       roles:
-         - { role: username.rolename, x: 42 }
+        
+        ...
+        
+        - name: Containerd
+          role: mikejonesey.kubernetes.containerd
+          when: "kubernetes_version is version('1.24.0','>=')"
+          tags: containerd
+        
+        ...
+        
+      tags: k8s-dep
 
 License
 -------
 
-BSD
+GPL-2.0-or-later
 
 Author Information
 ------------------
 
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+Michael Jones https://www.mikejonesey.co.uk/

@@ -50,17 +50,18 @@ kubernetes_secrets:
 ```
 **kubernetes_secrets subkey variables**
 
-| Name            | Type            | Example                          | Description                         |
-|-----------------|-----------------|----------------------------------|-------------------------------------|
-| name            | -               | example-secret                   | The secret name                     |
-| type            | -               | docker-registry, generic, tls    | The K8s secret type                 |
-| docker-email    | docker-registry | user@example.com                 | docker-registry user email          |
-| docker-password | docker-registry | password123                      | docker-registry user password       |
-| docker-server   | docker-registry | https://index.docker.io/v1/      | docker-registry uri                 |
-| docker-username | docker-registry | user                             | docker-registry username            |
-| data            | generic         | webhook_url=https://example.com/ | generic opaque type data            |
-| cert            | tls             | base64 encoded cert              | tls certificate data base64 encoded |
-| key             | tls             | base64 encoded key               | tls key data base64 encoded         |
+| Name            | Type            | Example                          | Description                                  |
+|-----------------|-----------------|----------------------------------|----------------------------------------------|
+| name            | -               | example-secret                   | The secret name                              |
+| type            | -               | docker-registry, generic, tls    | The K8s secret type                          |
+| namespaces      | -               | ['default','dev']                | A list of namespaces to create the secret in |
+| docker-email    | docker-registry | user@example.com                 | docker-registry user email                   |
+| docker-password | docker-registry | password123                      | docker-registry user password                |
+| docker-server   | docker-registry | https://index.docker.io/v1/      | docker-registry uri                          |
+| docker-username | docker-registry | user                             | docker-registry username                     |
+| data            | generic         | webhook_url=https://example.com/ | generic opaque type data                     |
+| cert            | tls             | base64 encoded cert              | tls certificate data base64 encoded          |
+| key             | tls             | base64 encoded key               | tls key data base64 encoded                  |
 
 ### Role Variables
 

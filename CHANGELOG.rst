@@ -4,6 +4,20 @@ Mikejonesey.Kubernetes Release Notes
 
 .. contents:: Topics
 
+v1.0.9
+======
+
+Release Summary
+---------------
+
+Add gVisor sandbox support
+
+Minor Changes
+-------------
+
+- update containerd to include gVisor sandbox setup
+- update secrets readme, namespaces default var documentation
+
 v1.0.8
 ======
 
