@@ -8,7 +8,7 @@ authors:
 description: Install and maintenance of kubernetes clusters.
 license:
   - GPL-2.0-or-later
-tags: ['kubernetes', 'K8s', 'application', 'infrastructure', 'linux', 'tools']
+tags: ['kubernetes', 'application', 'infrastructure', 'linux', 'tools']
 dependencies:
   mikejonesey.helm_charts: ">=1.0.0"
 repository: https://github.com/mikejonesey/ansible-collection-kubernetes
