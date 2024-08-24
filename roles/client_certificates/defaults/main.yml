@@ -1,0 +1,28 @@
+---
+# defaults file for client_certificates
+
+# This is used when not overriden by user specific value
+kubernetes_x509_client_default_expire: 86400  # one day
+
+kubernetes_x509_client_users: []
+
+# Example Setup admin and read only user
+# kubernetes_x509_client_users:
+#   - name: sysadmin-bill
+#     groups:
+#       - users-admin
+#   - name: developer-ted
+#     groups:
+#       - users-ro
+#     expire: 3600 # one hour
+#   - name: other-jane
+#     clusterroles:
+#       - appz-api
+#     expire: 3600 # one hour
+#   - name: other-jill
+#     namespace: dev
+#     roles:
+#       - reports
+#     expire: 3600 # one hour
+
+kubernetes_x509_client_kubeconfig_dir: "/home/{{ ansible_user }}/.kube"

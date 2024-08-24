@@ -1,0 +1,6 @@
+---
+- name: Test Manifests
+  hosts: localhost
+  remote_user: root
+  roles:
+    - manifests

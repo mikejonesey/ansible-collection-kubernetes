@@ -1,0 +1,24 @@
+{% if kubernetes_version is version('1.24.0', '>') %}
+apiVersion: certificates.k8s.io/v1
+{% else %}
+apiVersion: certificates.k8s.io/v1beta1
+{% endif %}
+kind: CertificateSigningRequest
+metadata:
+  name: user-{{ kubernetes_user.name }}-csr
+spec:
+  request: {{ user_csr.stdout }}
+{# spec.signerName is a required key after API version certificates.k8s.io/v1. In Kubernetes v1.22 and later  #}
+{% if kubernetes_version is version('1.22.0', '>=') %}
+  signerName: kubernetes.io/kube-apiserver-client
+{% endif %}
+{% set expire_secs = kubernetes_user.expire | default(kubernetes_x509_client_default_expire) %}
+{% if expire_secs > 0 %}
+  expirationSeconds: {{ expire_secs }}
+{% endif %}
+  usages:
+  - digital signature
+  - key encipherment
+  - client auth
+  groups:
+  - system:authenticated

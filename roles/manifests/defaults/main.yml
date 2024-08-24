@@ -1,0 +1,14 @@
+---
+# defaults file for manifests
+
+# Auth to cluster
+kubernetes_kubeconfig: "/home/{{ ansible_user }}/.kube/config"
+
+# Manifest files to apply
+kubernetes_manifest_files: []
+
+# Example, create group with view+node+url permissions
+# kubernetes_manifest_files:
+#   - rbac_clusterroles/user_ro_nodes.yaml
+#   - rbac_clusterroles/user_ro_urls.yaml
+#   - rbac_rolebindings/cluster_ro_group.yaml

@@ -26,7 +26,9 @@
 
 - name: Add gVisor Runtime
   ansible.builtin.include_tasks: runtime_gvisor/gvisor.yml
-  when: "kubernetes_containerd_sandbox_gvisor_enabled"
+  when: >
+    kubernetes_containerd_sandbox_gvisor_enabled or
+    kubernetes_containerd_sandbox_gvisor_kvm_enabled
 
 # --- containerd ---
 

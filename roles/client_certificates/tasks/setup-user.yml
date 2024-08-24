@@ -1,0 +1,129 @@
+# --------------------------------------------------
+# Create CSR
+# --------------------------------------------------
+
+- name: Stat user key
+  ansible.builtin.stat:
+    path: "certs/{{ kubernetes_user.name }}.key"
+  register: key_check
+
+- name: Generate user key and csr
+  ansible.builtin.shell: >
+    openssl genrsa -out {{ kubernetes_user.name }}.key 2048;
+    openssl req -new -key {{ kubernetes_user.name }}.key \
+      -out {{ kubernetes_user.name }}.csr \
+      -subj "/CN={{ kubernetes_user.name }}{{ lookup('template', 'user-groups-string.j2') }}"
+  args:
+    chdir: "certs"
+  changed_when: true
+  when: "not key_check.stat.exists"
+
+- name: Get csr content
+  ansible.builtin.shell: >
+    set -o pipefail
+    cat {{ kubernetes_user.name }}.csr | base64 -w0
+  args:
+    executable: "/bin/bash"
+    chdir: "certs"
+  register: user_csr
+  changed_when: false
+  when: "not key_check.stat.exists"
+
+- name: Upload user csr template
+  ansible.builtin.template:
+    src: user-csr.yaml.j2
+    dest: "certs/{{ kubernetes_user.name }}-csr.yaml"
+    mode: "0600"
+  when: "not key_check.stat.exists"
+
+# --------------------------------------------------
+# K8 Cert Management
+# --------------------------------------------------
+
+- name: K8 Create
+  ansible.builtin.shell: >
+    kubectl create -f certs/{{ kubernetes_user.name }}-csr.yaml
+  changed_when: true
+  when: "not key_check.stat.exists"
+
+- name: K8 Approve user csr
+  ansible.builtin.shell: >
+    kubectl certificate approve user-{{ kubernetes_user.name }}-csr
+  changed_when: true
+  when: "not key_check.stat.exists"
+
+- name: Export user crt
+  ansible.builtin.shell: >
+    set -o pipefail;
+    kubectl get csr user-{{ kubernetes_user.name }}-csr -o jsonpath='{ .status.certificate }' | base64 --decode > certs/{{ kubernetes_user.name }}.crt
+  args:
+    executable: "/bin/bash"
+  changed_when: true
+  when: "not key_check.stat.exists"
+
+# --------------------------------------------------
+# Create Kubeconfig
+# --------------------------------------------------
+
+- name: Generate Kubeconfig
+  ansible.builtin.shell: |
+    export KUBECONFIG="{{ kubernetes_x509_client_kubeconfig_dir }}/config-{{ kubernetes_cluster_name }}-{{ kubernetes_user.name }}"
+    kubectl config set-cluster {{ kubernetes_cluster_name }} \
+      --certificate-authority=ca.crt \
+      --embed-certs=true \
+      --server=https://{{ k8s_control_plane_ip }}:{{ ha_loadbalancer_apiserver_lb_port | default('6443') }} \
+      ;
+    kubectl config set-credentials {{ kubernetes_user.name }} \
+      --client-certificate={{ kubernetes_user.name }}.crt \
+      --client-key={{ kubernetes_user.name }}.key \
+      --embed-certs=true \
+      ;
+    kubectl config set-context {{ kubernetes_cluster_name }} \
+      --cluster={{ kubernetes_cluster_name }} \
+      --user={{ kubernetes_user.name }} \
+      --namespace=default \
+      ;
+    kubectl config use-context {{ kubernetes_cluster_name }}
+  args:
+    executable: "/bin/bash"
+    chdir: "certs"
+  changed_when: true
+
+# --------------------------------------------------
+# OPTIONAL : Role / Cluster Role Binding
+# --------------------------------------------------
+
+- name: Add Role Bindings
+  ansible.builtin.shell: |
+    set -o pipefail
+    {% for kubernetes_role in kubernetes_user.roles %}
+    kubectl create -n "{{ kubernetes_user.namespace }}" rolebinding user-{{ kubernetes_user.name }}-{{ kubernetes_role }} \
+      --role={{ kubernetes_role }} \
+      --user={{ kubernetes_user.name }} \
+      --dry-run=client -o yaml | kubectl apply -f -
+    {% endfor %}
+  args:
+    executable: /bin/bash
+  changed_when: true
+  when: >
+    kubernetes_user.namespace is defined and
+    kubernetes_user.roles is defined and
+    kubernetes_user.roles | length > 0
+
+- name: Add Cluster Role Bindings
+  ansible.builtin.shell: |
+    set -o pipefail
+    {% for kubernetes_clusterrole in kubernetes_user.clusterroles %}
+    kubectl create clusterrolebinding user-{{ kubernetes_user.name }}-{{ kubernetes_clusterrole }} \
+      --clusterrole={{ kubernetes_clusterrole }} \
+      --user={{ kubernetes_user.name }} \
+      --dry-run=client -o yaml | kubectl apply -f -
+    {% endfor %}
+  args:
+    executable: /bin/bash
+  changed_when: true
+  when: "kubernetes_user.clusterroles is defined and kubernetes_user.clusterroles | length > 0"
+
+# --------------------------------------------------
+# END
+# --------------------------------------------------

@@ -7,3 +7,14 @@
   ansible.builtin.package:
     name: runsc
     state: present
+
+- name: Create gVistor KVM Config
+  ansible.builtin.copy:
+    content: |
+      [runsc_config]
+      platform = "kvm"
+    dest: "/etc/containerd/runsc-kvm.toml"
+    owner: root
+    group: root
+    mode: "0644"
+  when: "kubernetes_containerd_sandbox_gvisor_kvm_enabled"

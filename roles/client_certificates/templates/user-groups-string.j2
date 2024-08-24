@@ -1,0 +1,5 @@
+{%- if kubernetes_user.groups is defined and kubernetes_user.groups | length > 0 -%}
+{%- for kubernetes_group in kubernetes_user.groups -%}
+/O={{ kubernetes_group }}
+{%- endfor -%}
+{%- endif -%}

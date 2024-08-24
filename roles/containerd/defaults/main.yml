@@ -2,3 +2,4 @@
 # defaults file for containerd
 
 kubernetes_containerd_sandbox_gvisor_enabled: false
+kubernetes_containerd_sandbox_gvisor_kvm_enabled: false

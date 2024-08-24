@@ -4,6 +4,22 @@ Mikejonesey.Kubernetes Release Notes
 
 .. contents:: Topics
 
+v1.0.10
+=======
+
+Release Summary
+---------------
+
+manifests and client certificates
+
+Minor Changes
+-------------
+
+- add client certificate role
+- add gVisor kvm to containerd
+- add manifests role
+- audit_webhook role updated
+
 v1.0.9
 ======
 

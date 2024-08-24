@@ -1,0 +1,11 @@
+---
+# tasks file for manifests
+
+- name: Apply Manifest
+  delegate_to: 'localhost'
+  become: false
+  kubernetes.core.k8s:
+    kubeconfig: "{{ kubernetes_kubeconfig }}"
+    state: present
+    definition: "{{ lookup('file', item) }}"
+  with_items: "{{ kubernetes_manifest_files }}"

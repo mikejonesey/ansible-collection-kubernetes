@@ -1,0 +1,42 @@
+---
+# tasks file for client_certificates
+
+- name: Fail when cluster name not defined
+  ansible.builtin.fail:
+    msg: "kubernetes_cluster_name must be defined"
+  when: "kubernetes_cluster_name is not defined"
+
+- name: Create crt dir
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0700"
+  with_items:
+    - certs
+
+# --------------------------------------------------
+# CA Cert
+# --------------------------------------------------
+
+- name: CA to File
+  ansible.builtin.shell: |
+    set -o pipefail
+    kubectl config view --raw -o jsonpath="{ .clusters[0].cluster.certificate-authority-data }" | base64 -d > ca.crt
+  args:
+    executable: "/bin/bash"
+    chdir: "certs"
+    creates: "certs/ca.crt"
+
+# --------------------------------------------------
+# Setup Users
+# --------------------------------------------------
+
+- name: Setup Users in K8s
+  ansible.builtin.include_tasks: setup-user.yml
+  with_items: "{{ kubernetes_x509_client_users }}"
+  loop_control:
+    loop_var: kubernetes_user
+
+# --------------------------------------------------
+# End
+# --------------------------------------------------
