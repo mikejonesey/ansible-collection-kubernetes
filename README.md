@@ -49,16 +49,17 @@ ansible-galaxy collection install mikejonesey.kubernetes
 
 ## Roles
 
-| Name                                                                    | Description                                                          |
-|-------------------------------------------------------------------------|----------------------------------------------------------------------|
-| [mikejonesey.kubernetes.containerd](roles/containerd/)                  | Install containerd, and extra sandbox runtime backends.              |
-| [mikejonesey.kubernetes.cluster_setup](roles/cluster_setup/)            | K8s cluster installation, and updates eg adding extra nodes later.   |
-| [mikejonesey.kubernetes.ha_loadbalancer](roles/ha_loadbalancer/)        | Highly available cluster setup (VIP and loadbalancer)                |
-| [mikejonesey.kubernetes.cluster_upgrade](roles/cluster_upgrade/)        | Cluster version upgrade                                              |
-| [mikejonesey.kubernetes.secrets](roles/secrets/)                        | K8s secrets creation                                                 |
-| [mikejonesey.kubernetes.manifests](roles/manifests)                     | Create K8s Manifests                                                 |
-| [mikejonesey.kubernetes.client_certificates](roles/client_certificates) | Create user certificates / kubeconfig for authentication to k8s api. |
-| [mikejonesey.kubernetes.cluster_reset](roles/cluster_reset/)            | Cluster uninstall                                                    |
+| Name                                                                    | Description                                                                             |
+|-------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
+| [mikejonesey.kubernetes.containerd](roles/containerd/)                  | Install containerd, and extra sandbox runtime backends.                                 |
+| [mikejonesey.kubernetes.cluster_setup](roles/cluster_setup/)            | K8s cluster installation, and updates eg adding extra nodes later.                      |
+| [mikejonesey.kubernetes.cluster_reconfigure](roles/cluster_reconfigure) | Change K8s cluster opions for audit logs, webhook, or exposing services for monitoring. |
+| [mikejonesey.kubernetes.ha_loadbalancer](roles/ha_loadbalancer/)        | Highly available cluster setup (VIP and loadbalancer)                                   |
+| [mikejonesey.kubernetes.cluster_upgrade](roles/cluster_upgrade/)        | Cluster version upgrade                                                                 |
+| [mikejonesey.kubernetes.secrets](roles/secrets/)                        | K8s secrets creation                                                                    |
+| [mikejonesey.kubernetes.manifests](roles/manifests)                     | Create K8s Manifests                                                                    |
+| [mikejonesey.kubernetes.client_certificates](roles/client_certificates) | Create user certificates / kubeconfig for authentication to k8s api.                    |
+| [mikejonesey.kubernetes.cluster_reset](roles/cluster_reset/)            | Cluster uninstall                                                                       |
 
 # Example Playbooks
 

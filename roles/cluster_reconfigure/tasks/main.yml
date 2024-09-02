@@ -1,0 +1,63 @@
+---
+# tasks file for cluster_reconfigure
+
+# ---------- Audit ----------
+
+- name: Create policies directory
+  become: true
+  ansible.builtin.file:
+    path: "/etc/kubernetes/policies"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  when: "kubernetes_audit_policy_enabled or kubernetes_audit_webhook_enable"
+
+- name: Template audit policy
+  become: true
+  ansible.builtin.template:
+    src: audit-policy.yaml.j2
+    dest: "/etc/kubernetes/policies/audit-policy.yaml"
+    owner: root
+    group: root
+    mode: "0600"
+  when: "kubernetes_audit_policy_enabled or kubernetes_audit_webhook_enable"
+
+- name: Template webhook config
+  become: true
+  ansible.builtin.template:
+    src: webhook-config.yaml.j2
+    dest: "/etc/kubernetes/policies/webhook-config.yaml"
+    owner: root
+    group: root
+    mode: "0600"
+  when: "kubernetes_audit_policy_enabled or kubernetes_audit_webhook_enable"
+
+# ---------- Kubeadmin ----------
+
+- name: Upload kubadm-config
+  ansible.builtin.template:
+    backup: true
+    src: "{{ kubernetes_kubeadm_config_template }}"
+    dest: "/root/kubeadm-config.yaml"
+    owner: root
+    group: root
+    mode: "600"
+
+- name: Pre-download images
+  ansible.builtin.command: kubeadm config images pull
+  register: init_output
+  changed_when: true
+  failed_when: "init_output.rc != 0"
+
+- name: Kubeadm apiserver
+  ansible.builtin.include_tasks: apiserver.yml
+
+- name: Kubeadm control manager
+  ansible.builtin.include_tasks: control_manager.yml
+
+- name: Kubeadm control manager
+  ansible.builtin.include_tasks: scheduler.yml
+
+- name: Kubeadm control manager
+  ansible.builtin.include_tasks: etcd.yml

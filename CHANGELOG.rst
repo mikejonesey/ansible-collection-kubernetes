@@ -4,6 +4,28 @@ Mikejonesey.Kubernetes Release Notes
 
 .. contents:: Topics
 
+v1.0.11
+=======
+
+Release Summary
+---------------
+
+Audit webhook to falco, and exposing k8s services to prometheus.
+
+Minor Changes
+-------------
+
+- add cluster reconfigure role
+- add extra params for audit logging
+- add extra params for audit webhooks
+- upgrade initial cluster setup options
+
+Bugfixes
+--------
+
+- change lb auth to pass when >2 lb, until further debug, ah not working on >2 nodes
+- replace hardcoded router_id in keepalived template
+
 v1.0.10
 =======
 

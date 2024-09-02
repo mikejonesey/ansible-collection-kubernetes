@@ -1,0 +1,3 @@
+apiVersion: audit.k8s.io/v1
+kind: Policy
+{{ kubernetes_audit_policy_rules | to_nice_yaml }}

@@ -1,0 +1,54 @@
+- name: Kubernetes etcd dry run
+  ansible.builtin.shell: |
+    kubeadm init phase etcd local --config=/root/kubeadm-config.yaml --dry-run -v=1
+  args:
+    executable: /bin/bash
+  register: dryrun_output
+  changed_when: true
+  failed_when: "dryrun_output.rc != 0"
+
+- name: Set dryrun output dir and file
+  ansible.builtin.set_fact:
+    dryrun_output_dir: "{{ dryrun_output.stderr | ansible.builtin.regex_search('(kubeadm-init-dryrun.*)/', '\\1') | first }}"
+    dryrun_output_file: "{{ dryrun_output.stderr | ansible.builtin.regex_search('(/etc/kubernetes/tmp/kubeadm-init-dryrun.*/.*.yaml)', '\\1') | first }}"
+
+- name: Print output dir and file
+  ansible.builtin.debug:
+    msg:
+      - "dry run dir: {{ dryrun_output_dir }}"
+      - "dry run file: {{ dryrun_output_file }}"
+
+- name: Diff etcd config
+  ansible.builtin.shell: |
+    diff /etc/kubernetes/manifests/etcd.yaml {{ dryrun_output_file }}
+  args:
+    executable: /bin/bash
+  register: config_diff
+  changed_when: false
+  failed_when: "init_output.rc == 127"
+
+- name: Print differences
+  ansible.builtin.debug:
+    msg: "{{ config_diff.stdout_lines }}"
+  when: "config_diff.rc == 1"
+
+- name: Confirm Action
+  ansible.builtin.pause:
+    prompt: "Confirm api server reconfiguration"
+  when: "config_diff.rc == 1"
+
+- name: Kubernetes Reconfigure etcd
+  ansible.builtin.shell: |
+    set -o pipefail
+    kubeadm init phase etcd local --config=/root/kubeadm-config.yaml | tee /root/kubeadm-reconfigure-etcd-{{ ansible_date_time['epoch'] }}.out
+  args:
+    executable: /bin/bash
+  register: init_output
+  changed_when: true
+  failed_when: "init_output.rc != 0"
+  when: "config_diff.rc == 1"
+
+- name: Clear dry run file
+  ansible.builtin.file:
+    path: "/etc/kubernetes/tmp/{{ dryrun_output_dir }}"
+    state: absent

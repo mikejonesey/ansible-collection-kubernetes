@@ -1,0 +1,6 @@
+---
+- name: Test K8s Reconfigure
+  hosts: localhost
+  remote_user: root
+  roles:
+    - cluster_reconfigure

@@ -25,7 +25,7 @@ vrrp_instance VI_1 {
     state BACKUP
 {% endif %}
     interface {{ ha_loadbalancer_vip_interface }}
-    virtual_router_id 52
+    virtual_router_id {{ ha_loadbalancer_vip_virtual_router_id }}
 {% if ansible_host == hostvars[groups['k8s_ha_lb'][0]].ansible_host %}
     priority 150
 {% else %}
@@ -33,7 +33,11 @@ vrrp_instance VI_1 {
 {% endif %}
     advert_int 1
     authentication {
+{% if groups['k8s_ha_lb'] | length > 2 %}
+        auth_type PASS
+{% else %}
         auth_type AH
+{% endif %}
         auth_pass {{ ha_loadbalancer_vip_pass }}
     }
 {% set vip_ip_k8s = hostvars[groups['k8s_cp_vip'][0]].ansible_ssh_host %}
