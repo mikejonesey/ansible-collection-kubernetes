@@ -17,9 +17,9 @@ apiServer:
     - "{{ k8s_control_plane_host }}"
     - "{{ k8s_control_plane_ip }}"
   extraArgs:
-{% if kubernetes_audit_policy_enabled or kubernetes_audit_webhook_enable %}
+{% if kubernetes_audit_log_enabled or kubernetes_audit_webhook_enable %}
     audit-policy-file: /etc/kubernetes/policies/audit-policy.yaml
-{% if kubernetes_audit_policy_enabled %}
+{% if kubernetes_audit_log_enabled %}
     audit-log-path: "{{ kubernetes_audit_log_path }}" # where logs should be written within the pod
     audit-log-mode: "{{ kubernetes_audit_log_mode }}" # Default: "blocking" - blocking or batch writes
     audit-log-maxbackup: "{{ kubernetes_audit_log_maxbackup }}" # max log files to retain
@@ -35,13 +35,23 @@ apiServer:
     audit-webhook-batch-max-wait: "{{ kubernetes_audit_webhook_batch_max_wait }}" # Default: 30s
     audit-webhook-truncate-enabled: "{{ kubernetes_audit_webhook_truncate_enabled }}" # default false
 {% endif %}
+{% if kubernetes_manifests_encryption_enabled %}
+    encryption-provider-config: "/etc/kubernetes/encryption/encryption_config.yaml"
+{% endif %}
   extraVolumes:
     - name: audit-policy
       hostPath: /etc/kubernetes/policies/
       mountPath: /etc/kubernetes/policies/
       readOnly: true
       pathType: "DirectoryOrCreate"
-{% if kubernetes_audit_policy_enabled %}
+{% if kubernetes_manifests_encryption_enabled %}
+    - name: encryption
+      hostPath: /etc/kubernetes/encryption/
+      mountPath: /etc/kubernetes/encryption/
+      readOnly: true
+      pathType: "DirectoryOrCreate"
+{% endif %}
+{% if kubernetes_audit_log_enabled %}
     - name: audit-log
       hostPath: /var/log/kubernetes/audit/
       mountPath: /var/log/kubernetes/audit/

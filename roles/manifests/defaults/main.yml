@@ -7,8 +7,26 @@ kubernetes_kubeconfig: "/home/{{ ansible_user }}/.kube/config"
 # Manifest files to apply
 kubernetes_manifest_files: []
 
+# Manifest templates to apply
+kubernetes_manifest_templates: []
+
+# --------------------------------------------------
+# EXAMPLES
+# --------------------------------------------------
+
 # Example, create group with view+node+url permissions
 # kubernetes_manifest_files:
 #   - rbac_clusterroles/user_ro_nodes.yaml
 #   - rbac_clusterroles/user_ro_urls.yaml
 #   - rbac_rolebindings/cluster_ro_group.yaml
+
+# Example config for alert manager
+# kubernetes_manifest_templates:
+#   - prometheus/alert_manager_config.yaml.j2
+
+# --------------------------------------------------
+# Example Template Defaults
+# --------------------------------------------------
+
+# Ansible can define this var from vault or pass
+kubernetes_manifests_prometheus_discord_url: "https://discord.com/api/webhooks/CHANGEME"

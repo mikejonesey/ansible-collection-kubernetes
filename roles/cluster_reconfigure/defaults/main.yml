@@ -26,7 +26,7 @@ kubernetes_kubeadm_config_template: "kubeadm-config.yml.j2"
 
 # Default Kube Config Template Vars
 
-kubernetes_audit_policy_enabled: false
+kubernetes_audit_log_enabled: false
 kubernetes_audit_webhook_enable: false
 
 kubernetes_audit_log_path: "/var/log/kubernetes/audit/audit.log" # where logs should be written within the pod
@@ -130,3 +130,7 @@ kubernetes_audit_policy_rules:
         - "RequestReceived"
 
 # --------------------------------------------------
+
+# Source a 32bit encryption key, override from vault or pass
+kubernetes_manifests_encryption_enabled: false
+kubernetes_manifests_encryption_configuration_key: "{{ lookup('community.general.random_string', length=32, base64=True) }}"

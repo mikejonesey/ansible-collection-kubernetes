@@ -4,6 +4,35 @@ Mikejonesey.Kubernetes Release Notes
 
 .. contents:: Topics
 
+v1.0.13
+=======
+
+Release Summary
+---------------
+
+add k8s secrets encryption
+
+Minor Changes
+-------------
+
+- add secret encryption
+- example manifest updates for prometheus
+
+v1.0.12
+=======
+
+Release Summary
+---------------
+
+Add manifest templates
+
+Minor Changes
+-------------
+
+- add manifest templates
+- cleanup of cluster reconfigure after further testing
+- cleanup var naming and update readme
+
 v1.0.11
 =======
 

@@ -11,7 +11,7 @@
     owner: root
     group: root
     mode: "0700"
-  when: "kubernetes_audit_policy_enabled or kubernetes_audit_webhook_enable"
+  when: "kubernetes_audit_log_enabled or kubernetes_audit_webhook_enable"
 
 - name: Template audit policy
   become: true
@@ -21,7 +21,27 @@
     owner: root
     group: root
     mode: "0600"
-  when: "kubernetes_audit_policy_enabled or kubernetes_audit_webhook_enable"
+  when: "kubernetes_audit_log_enabled or kubernetes_audit_webhook_enable"
+
+- name: Create encryption config directory
+  become: true
+  ansible.builtin.file:
+    path: "/etc/kubernetes/encryption"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  when: "kubernetes_manifests_encryption_enabled"
+
+- name: Template encryption config
+  become: true
+  ansible.builtin.template:
+    src: encryption_config.yaml.j2
+    dest: "/etc/kubernetes/encryption/encryption_config.yaml"
+    owner: root
+    group: root
+    mode: "0600"
+  when: "kubernetes_manifests_encryption_enabled"
 
 - name: Template webhook config
   become: true
@@ -31,7 +51,7 @@
     owner: root
     group: root
     mode: "0600"
-  when: "kubernetes_audit_policy_enabled or kubernetes_audit_webhook_enable"
+  when: "kubernetes_audit_log_enabled or kubernetes_audit_webhook_enable"
 
 # ---------- Kubeadmin ----------
 

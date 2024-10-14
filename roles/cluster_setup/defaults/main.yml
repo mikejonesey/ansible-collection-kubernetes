@@ -39,7 +39,7 @@ kubernetes_kubeadm_config_template: "k8s/kubeadm-config.yml.j2"
 
 # Default Kube Config Template Vars
 
-kubernetes_audit_policy_enabled: false
+kubernetes_audit_log_enabled: false
 kubernetes_audit_webhook_enable: false
 
 kubernetes_audit_log_path: "/var/log/kubernetes/audit/audit.log" # where logs should be written within the pod

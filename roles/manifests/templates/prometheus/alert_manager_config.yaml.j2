@@ -1,0 +1,13 @@
+{# Prometheus bug to be solved in 0.27.1, prevents the use of  webhook_url_file #}
+{# Temp solution using 0.27.0, is to make the entire config a secret using webhook_url #}
+---
+apiVersion: v1
+data:
+  alertmanager.yaml: {{ lookup('template', "prometheus/alertmanager.yaml.j2") | b64encode }}
+kind: Secret
+metadata:
+  labels:
+    release: kube-prometheus-stack
+  name: alertmanager-kube-prometheus-stack-alertmanager
+  namespace: monitoring
+type: Opaque

@@ -1,0 +1,14 @@
+apiVersion: apiserver.config.k8s.io/v1
+kind: EncryptionConfiguration
+resources:
+  - resources:
+      - secrets
+    providers:
+      # aescbc is not recommended due to CBC's vulnerability to padding oracle attacks. Key material accessible from control plane host.
+      - aescbc:
+          keys:
+            - name: key1
+              secret: {{ kubernetes_manifests_encryption_configuration_key }}
+      # identity is plain text, in other words NO encryption
+      # this fallback allows reading unencrypted secrets
+      - identity: {}

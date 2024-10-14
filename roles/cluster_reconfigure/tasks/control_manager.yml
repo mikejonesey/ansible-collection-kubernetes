@@ -25,7 +25,7 @@
     executable: /bin/bash
   register: config_diff
   changed_when: false
-  failed_when: "init_output.rc == 127"
+  failed_when: "config_diff.rc == 2"
 
 - name: Print differences
   ansible.builtin.debug:
